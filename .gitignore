@@ -1,0 +1,5 @@
+**/.vagrant
+**/config/etc/yum.repos.d
+**/config/mirror
+**/config/kubeadm
+**/offline
