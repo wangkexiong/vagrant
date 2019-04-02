@@ -43,8 +43,6 @@ module VagrantPlugins
         end
 
         def default_config
-          return @@machine_config if @@machine_config
-
           config = @machine.config.proxy
 
           cmd = "ip addr | grep inet | grep -v inet6 | awk '{print $2}' | awk -F/ '{print $1}' | paste -s -d,"
