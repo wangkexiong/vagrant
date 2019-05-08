@@ -1,4 +1,6 @@
 .vscode
+disk/
+
 **/.vagrant
 **/config/etc/yum.repos.d
 **/config/mirror
