@@ -46,14 +46,16 @@ module VagrantPlugins
           config = @machine.config.proxy
 
           cmd = "ip addr | grep inet | grep -v inet6 | awk '{print $2}' | awk -F/ '{print $1}' | paste -s -d,"
-          config_noproxy = sudo(cmd)[:stdout]
-          if config_noproxy
+          cmd_config = sudo(cmd)[:stdout]
+          if cmd_config
             if config.no_proxy
-              config.no_proxy = "#{config_noproxy},#{config.no_proxy}"
+              config.no_proxy = "#{cmd_config},#{config.no_proxy}"
             else
-              config.no_proxy = "#{config_noproxy}"
+              config.no_proxy = "#{cmd_config}"
             end
           end
+
+          config.no_proxy = config.no_proxy.split(',').uniq().join(',')
           @@machine_config = finalize_config(config)
         end
       end
