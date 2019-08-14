@@ -1,0 +1,8 @@
+
+  If want to use private registry for quay.io, download the yml first
+and replace images section with private registry ones
+
+```bash
+wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+sed -i 's/image: quay\.io/image: xxxxxxxxxxx/g' kube-flannel.yml
+```

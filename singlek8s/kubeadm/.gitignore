@@ -1,0 +1,6 @@
+
+config/etc/yum.repos.d/*
+config/kubeadm/*
+!config/etc/yum.repos.d/README
+!config/kubeadm/README
+

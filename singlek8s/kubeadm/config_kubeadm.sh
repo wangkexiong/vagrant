@@ -12,7 +12,7 @@ if [ -f /root/.kubeadm_init ]; then
     fi
   fi
 else
-  #Disable mail and rpcbind
+  # Disable mail and rpcbind
   systemctl stop postfix
   systemctl disable postfix
   systemctl stop rpcbind
@@ -35,8 +35,12 @@ else
   KUBEADM_CMD="kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=0.0.0.0"
 
   # See if we have gcr.io mirror site
-  if [ -f /vagrant/config/mirror/docker/gcr.io ]; then
-    KUBEADM_CMD="$KUBEADM_CMD --image-repository `cat /vagrant/config/mirror/docker/gcr.io`"
+  if [ -f /vagrant/config/mirror/k8s.gcr.io ]; then
+    MIRROR_URL=`cat /vagrant/config/mirror/k8s.gcr.io | grep -v "^ *#" | xargs -n1 | tail -1`
+    if [ "$MIRROR_URL" != "" ]; then
+      MIRROR_URL=`echo $MIRROR_URL | sed 's/http[s]*:\/\///' | sed 's/\/$//'`
+      KUBEADM_CMD="$KUBEADM_CMD --image-repository $MIRROR_URL"
+    fi
   fi
 
   # Extra Subject Alternative Names (SANs) to use for the API Server serving certificate.
@@ -58,8 +62,8 @@ else
   sudo chown vagrant:vagrant /home/vagrant/.kube/config
 
   # If want to use private registry, download the yml first and replace images with private registry ones
-  if [ -f /vagrant/config/kubeadm/flannel.yml ]; then
-    kubectl apply -f /vagrant/config/kubeadm/flannel.yml
+  if [ -f /vagrant/config/kubeadm/kube-flannel.yml ]; then
+    kubectl apply -f /vagrant/config/kubeadm/kube-flannel.yml
   else
     kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
   fi
