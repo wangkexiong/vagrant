@@ -1,6 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# Setting swarm cluster requires data sharing among guest machines.
+# For Hyper-V provider, set VAGRANT_SMB_USER and VAGRANT_SMB_PASSWORD ENV variables...
+
 # For Hyper-V provider, dynamic switch management and static IP assignment are still not included.
 # vagrant 2.24 and hyperv 10.0.17134.81.
 #

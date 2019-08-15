@@ -13,7 +13,7 @@ chmod 700 /root/.ssh /home/vagrant/.ssh
 WORKING_DIR=/vagrant/exchange/ssh
 if [ ! -d $WORKING_DIR ]; then
   mkdir -p $WORKING_DIR
-  yes y | ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa -C wangkexiong@vagrant
+  yes y | ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa
   cp -p /root/.ssh/id_rsa* $WORKING_DIR/.
 else
   cp -p $WORKING_DIR/id_rsa* /root/.ssh/.

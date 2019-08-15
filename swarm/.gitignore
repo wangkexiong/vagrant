@@ -1,0 +1,4 @@
+
+config/etc/yum.repos.d/*
+!config/etc/yum.repos.d/README
+exchange/*
