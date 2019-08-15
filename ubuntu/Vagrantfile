@@ -1,0 +1,68 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Hyper-V adding secondary disk are still pending for vagrant
+## https://github.com/hashicorp/vagrant/pull/6321
+## Cuurently need Hyper-V Manager to add disks by hands...
+
+HOME_DISK="disk/ubuntu_home.vhd"
+WORK_DISK="disk/working.vhd"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-18.04"
+  config.vm.hostname = "hangzhou"
+  config.vm.blabla_cpus = 4
+  config.vm.blabla_memory = 2048
+
+  # Vagrant handles the script execution mode and dos charactors
+  # Otherwise needs to handle them explicitly. (Compare this and config_packages.sh)
+  Dir["#{__dir__}/script/ubuntu/*.sh"].each do |script|
+    config.vm.provision :shell, :path => File.expand_path(script)
+  end
+
+  config.vm.provision :shell, :path => "install_packages.sh"
+  # To avoid vagrant proxy to provision after every script, running them in single script.
+  config.vm.provision :shell, :path => "config_packages.sh"
+
+  # SSH connection
+  ## vagrant enabled another SSH port on virtualbox,
+  ## but it is stricted to listen on localhost not foreign address *
+  config.vm.network "forwarded_port", guest: 22, host: 4422
+  # x11vnc connection
+  config.vm.network "forwarded_port", guest: 5900, host: 5900
+  # Xtightvnc skips user authentication but only vnc password.
+  # Better use ssh tunnel to encrypt the connection.
+  # SSH -L 5966:*:5901 x.x.x.x -p 4422
+
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ['storageattach', :id,
+                   '--storagectl', 'SATA Controller',
+                   '--port' , 1,
+                   '--device', 0,
+                   '--type', 'hdd',
+                   '--hotpluggable', 'on',
+                   '--medium', HOME_DISK] if File.exists? HOME_DISK
+    vb.customize ['storageattach', :id,
+                   '--storagectl', 'SATA Controller',
+                   '--port' , 2,
+                   '--device', 0,
+                   '--type', 'hdd',
+                   '--hotpluggable', 'on',
+                   '--medium', WORK_DISK] if File.exists? WORK_DISK
+  end
+
+  ## If there is NO detach operation, virtualbox will delete these disks while performing destroy operation...
+  config.trigger.before :destroy do |trigger|
+    trigger.ruby do |env,machine|
+      if machine.provider_name == :virtualbox
+        puts
+        puts 'Detach disks for virtualbox provider...'
+        puts
+        system("VBoxManage storageattach '#{machine.id}'" +
+               " --storagectl 'SATA Controller' --port 1 --device 0 --type hdd --medium none 2>/dev/null")
+        system("VBoxManage storageattach '#{machine.id}'" +
+               " --storagectl 'SATA Controller' --port 2 --device 0 --type hdd --medium none 2>/dev/null")
+      end
+    end
+  end
+end

@@ -1,0 +1,6 @@
+
+# sougoupinyin required
+libopencc2
+
+# Win-Emulator
+wine-stable winbind

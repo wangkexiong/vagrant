@@ -1,0 +1,10 @@
+## user:sudo_priviledge:user_id:main_group:encrypt password
+#
+# The secret word can be generated using the following ways:
+# Refer https://askubuntu.com/questions/94060/run-adduser-non-interactively
+##
+## `mkpasswd -m sha-512 secret`
+## `openssl passwd -1 secret
+## `python3 -c 'import crypt; print(crypt.crypt("secret"))'`
+
+#test:N:10000:test:$6$brdXlch/9$TE7d.ifTypKntDhirnyBNE89g6nlaibsfDCH9YbYnuwESYIj3bh9rL.JUoedNt39ADDaPk3kN.LM1ulPI4vih1
