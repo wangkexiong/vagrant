@@ -1,30 +1,39 @@
 #!/bin/bash
 
+# install/upgrade snapd
 if [ -f /vagrant/config/mirror/archive.ubuntu.com ]; then
-  MIRROR_URL=`cat /vagrant/config/mirror/archive.ubuntu.com`
-  sed "s@http[^ ]*@$MIRROR_URL@" -i /etc/apt/sources.list
+  MIRROR_URL=`cat /vagrant/config/mirror/archive.ubuntu.com | grep -v "^ *#" | xargs -n1 | tail -1`
+  if [ -n $MIRROR_URL ]; then
+    sed "s@http[^ ]*@$MIRROR_URL@" -i /etc/apt/sources.list
+  fi
 fi
 
-apt-get update && apt-get install -y snapd
+apt-get update && apt-get install -y snapd dos2unix
 systemctl restart snapd
 
+# snap install microk8s
 CONFIG="FALSE"
 QUERY=`snap list microk8s 2>&1`
 if [ `echo $QUERY | grep -q "error"; echo $?` -eq 0 ]; then
   echo "Start installing microk8s ..."
-  if [ `ls -1 /vagrant/offline/*.snap | grep -E "core || microk8s" | wc -l` -eq 2 ]; then
-    if ls -1 /vagrant/offline/core*.assert 2>/dev/null > /dev/null; then
-      snap ack /vagrant/offline/core*.assert
-      snap install /vagrant/offline/core*.snap
+  CORE_SNAP=`ls -1 /vagrant/offline/core*.snap 2>/dev/null| xargs -n1 | tail -1`
+  MICROK8S_SNAP=`ls -1 /vagrant/offline/microk8s*.snap 2>/dev/null | xargs -n1 | tail -1`
+
+  if [ "$CORE_SNAP" != "" ] && [ "$MICROK8S_SNAP" != "" ]; then
+    CORE_ASSERT="${CORE_SNAP%.snap}.assert"
+    if ls -1 "$CORE_ASSERT" 2>/dev/null >/dev/null; then
+      snap ack "$CORE_ASSERT"
+      snap install "$CORE_SNAP"
     else
-      snap install /vagrant/offline/core*.snap --dangerous
+      snap install "$CORE_SNAP" --dangerous
     fi
 
-    if ls -1 /vagrant/offline/microk8s*.assert 2>/dev/null > /dev/null; then
-      snap ack /vagrant/offline/microk8s*.assert
-      snap install /vagrant/offline/microk8s*.snap --classic
+    MICROK8S_ASSERT="${MICROK8S_SNAP%.snap}.assert"
+    if ls -1 "$MICROK8S_ASSERT" 2>/dev/null >/dev/null; then
+      snap ack "$MICROK8S_ASSERT"
+      snap install "$MICROK8S_SNAP" --classic
     else
-      snap install /vagrant/offline/microk8s*.snap --classic --dangerous
+      snap install "$MICROK8S_SNAP" --classic --dangerous
     fi
   else
     snap install microk8s --classic
@@ -40,30 +49,16 @@ if [ `echo $QUERY | grep -q "disabled"; echo $?` -eq 0 ]; then
 fi
 
 if [ "$CONFIG" = "TRUE" ]; then
-  snap alias microk8s.docker docker
-  snap alias microk8s.kubectl kubectl
-
-  # HACK: rename docker service for vagrant-proxyconf
-  systemctl disable snap.microk8s.daemon-docker
-  systemctl stop snap.microk8s.daemon-docker
-  mv /etc/systemd/system/snap.microk8s.daemon-docker.service /lib/systemd/system/docker.service
-
-  # Change MAX fd for containers
-  mkdir -p /etc/systemd/system/docker.service.d
-  cat <<-EOF > /etc/systemd/system/docker.service.d/override.conf
-[Service]
-LimitNOFILE=65536
-EOF
-
-  # Enable TCP connection (NO TLS for easy testing...)
-  if [ -f /var/snap/microk8s/current/args/dockerd ]; then
-    if [ `grep "tcp://0.0.0.0:2375" /var/snap/microk8s/current/args/dockerd > /dev/null; echo $?` -ne 0 ]; then
-      echo "-H tcp://0.0.0.0:2375" >> /var/snap/microk8s/current/args/dockerd
-    fi
+  ## https://github.com/ubuntu/microk8s/issues/382
+  #  From release 1.14 containerd replaced dockerd
+  MICROK8S_VER=`snap list microk8s | awk '{print $2}' | xargs -n1 | tail -1 | sed 's/[a-z]*//'`
+  if [ `awk -v ver="$MICROK8S_VER" 'BEGIN {print (ver<1.14)?"YES":"NO"}'` = "YES" ]; then
+    dos2unix /vagrant/postinstall_with_dockerd.sh
+    source /vagrant/postinstall_with_dockerd.sh
+    postinstall_with_dockerd
+  else
+    dos2unix /vagrant/postinstall_with_containerd.sh
+    source /vagrant/postinstall_with_containerd.sh
+    postinstall_with_containerd
   fi
-
-  systemctl enable docker
-  ln -s /etc/systemd/system/docker.service /etc/systemd/system/snap.microk8s.daemon-docker.service
-  systemctl daemon-reload
-  systemctl restart docker
 fi
