@@ -13,3 +13,11 @@ if [ -f "$CSR_CONF" ]; then
     fi
   fi
 fi
+
+## https://gist.github.com/borkmann/84812fcac624fb659f66f0d514faa1c8#problems-deploying-cilium-daemon-set
+#  To make Daemonset configuration working with microk8s...
+APISERVER_CONF=/var/snap/microk8s/current/args/kube-apiserver
+if ! `grep -q "^\-\-allow-privileged$" "$APISERVER_CONF"`; then
+  echo "--allow-privileged" >> "$APISERVER_CONF"
+  systemctl restart snap.microk8s.daemon-apiserver.service
+fi
