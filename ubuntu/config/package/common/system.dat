@@ -1,0 +1,21 @@
+
+# Resource tracking
+lsof iotop iftop htop
+
+# Console typed file manager
+mc
+
+# Network
+socat
+
+# Terminal
+tmux
+
+# Script programming
+dos2unix jq xmlstarlet
+
+# mkpasswd can generate sha-512 hashed password (crypt3 implemention)
+whois
+
+# Enhanced text finder
+ack-grep

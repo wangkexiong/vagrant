@@ -1,0 +1,5 @@
+
+Place microk8s snap packages here.
+
+The snap packages can be downloaded by `snap download microk8s --channel=1.13/stable`
+core_xxxx.snap is required for microk8s installation as well...

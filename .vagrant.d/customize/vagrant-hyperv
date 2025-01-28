@@ -1,0 +1,36 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # Force hyperv to use Default Switch.
+  config.vm.provider :hyperv do |h, override|
+    override.vm.network "public_network", bridge: "Default Switch"
+  end
+
+  config.trigger.before :up do |trigger|
+    trigger.ruby do |env,machine|
+      if machine.provider_name == :hyperv
+        ## The password for samba will be stored in plain format,
+        #  in .vagrant\machines\default\hyperv\synced_folders.
+        #  Unless you TRULY need double direction data exchange,
+        #  or care about the performance of data operation, PLZ DONOT use SAMBA!!!
+        if ENV['VAGRANT_SMB_USER']
+          # Make sure cifs-utils is installed in box image.
+          # Such as bento/centos-7 and bento/ubuntu-16.04
+          machine.config.vm.synced_folder ".", "/vagrant", type: "smb",
+                smb_username: ENV['VAGRANT_SMB_USER'],
+                smb_password: ENV['VAGRANT_SMB_PASSWORD'],
+                mount_options: ["vers=3.0"]
+        else
+          ## This is the one way rsync, from host to VM.
+          #  Use `vagrant rsync` or `vagrant rsync-auto` to update with changes
+          ## If want to work on bi-direction, try with plugin:
+          #  http://github.com/dmatora/vagrant-unison
+          #  or https://github.com/smerrill/vagrant-rsync-back
+          machine.config.vm.synced_folder ".", "/vagrant", type: "rsync"
+        end
+      end
+    end
+  end
+end
+

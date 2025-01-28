@@ -1,0 +1,21 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/centos-7"
+  config.vm.hostname = "kubeadm"
+
+  config.vm.blabla_cpus = 4
+  config.vm.blabla_memory = 2048
+
+  config.vm.network "private_network", type: "dhcp"
+  config.vm.network "forwarded_port", guest: 22,   host: 6622
+  config.vm.network "forwarded_port", guest: 2375, host: 2375
+  config.vm.network "forwarded_port", guest: 6443, host: 6443
+
+  config.vm.provision "shell", path: "install_kubeadm.sh"
+
+  # You may want to add Host VM IP into SANs for kube-apiserver certifications
+  # config.vm.provision :shell, :path => "config_kubeadm.sh", :args => "192.168.168.1"
+  config.vm.provision :shell, :path => "config_kubeadm.sh"
+end

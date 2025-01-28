@@ -1,0 +1,22 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-18.04"
+  config.vm.hostname = "microk8s"
+
+  config.vm.blabla_cpus = 4
+  config.vm.blabla_memory = 2048
+
+  # Use `microk8s.config` to check the port kube-apiserver is listened on...
+  config.vm.network "forwarded_port", guest: 22,    host: 6622
+  config.vm.network "forwarded_port", guest: 2375,  host: 2375
+  config.vm.network "forwarded_port", guest: 8080,  host: 8080
+  config.vm.network "forwarded_port", guest: 16443, host: 16443
+
+  config.vm.provision :shell, :path => "install_microk8s.sh"
+
+  # You may want to add Host VM IP into SANs for kube-apiserver certifications
+  # config.vm.provision :shell, :path => "config_microk8s.sh", :args => "192.168.168.1"
+  config.vm.provision :shell, :path => "config_microk8s.sh"
+end

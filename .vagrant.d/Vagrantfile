@@ -1,0 +1,7 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+vagrantfiles = Dir["#{__dir__}/customize/*"]
+vagrantfiles.each do |vagrantfile|
+  load File.expand_path(vagrantfile)
+end

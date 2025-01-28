@@ -1,0 +1,27 @@
+
+# desktop
+ubuntu-desktop
+
+# Ubuntu 18.04 switched from LightDM to GDM3.
+# If gdm3 is used, there will be at least 2 xauth:
+#   One for login and the other for X-Window.
+# This can be verified by: `ps wwwwaux | grep auth`.
+# Thus x11vnc service needs to open 2 ports. After login successfully, switch vnc connection.
+# Connecting to the login screen with VNC while using GDM3 is currently not easy to use.
+# The easiest way to get this VNC functionality back is to simply switch back from GDM3 to LightDM.
+x11vnc lightdm
+
+# Another simple solution for vncserver with xfce4
+tightvncserver xfce4 autocutsel
+
+# vim
+vim-gnome
+
+# Terminal multiplexer
+terminator
+
+# Input methods
+fcitx fcitx-libs fcitx-libs-qt libqtwebkit4 libqt4-opengl fcitx-googlepinyin
+
+# Conky
+conky-all

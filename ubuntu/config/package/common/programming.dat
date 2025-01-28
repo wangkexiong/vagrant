@@ -1,0 +1,15 @@
+
+# compiler
+git gcc g++ make autoconf automake scons
+
+# mxe
+autopoint bash bison bzip2 flex g++-multilib gettext gperf intltool
+libc6-dev-i386 libgdk-pixbuf2.0-dev libltdl-dev libssl-dev libtool-bin
+libxml-parser-perl lzip openssl p7zip-full patch perl pkg-config
+python ruby sed unzip wget xz-utils
+
+# docker-ce
+docker-ce
+
+# Programming tools
+exuberant-ctags

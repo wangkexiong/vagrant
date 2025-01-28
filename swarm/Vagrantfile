@@ -1,0 +1,71 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Setting swarm cluster requires data sharing among guest machines.
+# For Hyper-V provider, set VAGRANT_SMB_USER and VAGRANT_SMB_PASSWORD ENV variables...
+
+# For Hyper-V provider, dynamic switch management and static IP assignment are still not included.
+# vagrant 2.24 and hyperv 10.0.17134.81.
+#
+# C:\>wmic datafile where name="c:\\windows\\system32\\vmms.exe" get version
+# Version
+# 10.0.17134.81
+#
+# Since no static IP for Hyper-V, the swarm cluster may fail to start when vagrant machines IP changes.
+# And cluster information may lost in this kind of case. Recreate the machines is the solution.
+
+manager = {
+  :numbers => 1,
+  :cpus => 2,
+  :memory => 1024,
+  :vms => [],
+  :ips => []
+}
+(1..manager[:numbers]).each do |n|
+  manager[:ips] << "192.168.56.#{n+10}"
+  manager[:vms] << "manager" if n==1
+  manager[:vms] << "manager#{n}" unless n==1
+end
+
+worker = {
+  :numbers => 1,
+  :cpus => 2,
+  :memory => 1024,
+  :vms => [],
+  :ips => []
+}
+(1..worker[:numbers]).each do |n|
+  worker[:ips] << "192.168.56.#{n+100}"
+  worker[:vms] << "worker#{n}"
+end
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/centos-7"
+  config.vm.provision :shell, :path => "preactions.sh"
+  config.vm.provision :shell, :path => "install_docker.sh"
+
+  (1..manager[:numbers]).each do |n|
+    config.vm.define vm_name=manager[:vms][n-1] do |i|
+      i.vm.hostname = vm_name
+      i.vm.blabla_cpus = manager[:cpus]
+      i.vm.blabla_memory = manager[:memory]
+      i.vm.network "private_network", ip: manager[:ips][n-1]
+    end
+  end
+
+  (1..worker[:numbers]).each do |n|
+    config.vm.define vm_name=worker[:vms][n-1] do |i|
+      i.vm.hostname = vm_name
+      i.vm.blabla_cpus = worker[:cpus]
+      i.vm.blabla_memory = worker[:memory]
+      i.vm.network "private_network", ip: worker[:ips][n-1]
+
+      # Virtualbox and Hyper-V DO NOT SUPPORT parallel provision
+      # Configure swarm when the last one is created...
+      if n == worker[:numbers]
+        i.vm.provision :shell, :path => "configure_hosts.sh"
+        i.vm.provision :shell, :path => "configure_swarm.sh", :args => "\'#{manager[:vms].join(' ')}\' \'#{worker[:vms].join(' ')}\'"
+      end
+    end
+  end
+end
