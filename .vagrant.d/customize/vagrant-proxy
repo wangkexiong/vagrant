@@ -1,0 +1,32 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Version 2.0.0 with some code for native Linux Env OP
+# Which may break working on Windows
+# Fallback to use version 1.5.2
+proxyconf_ver = "1.5.2"
+
+# Check if the necessary plugins are installed
+if ARGV[0] == "up" || ARGV[0] == "provision"
+  if not ENV['http_proxy'].to_s.strip.empty?
+    required_plugins = %w( vagrant-proxyconf )
+    plugins_to_install = required_plugins.select { |plugin| not Vagrant.has_plugin? plugin }
+    if not plugins_to_install.empty?
+      puts "Installing plugins: #{plugins_to_install.join(' ')}"
+      if system "vagrant plugin install #{plugins_to_install.join(' ')} --plugin-version #{proxyconf_ver}"
+        exec "vagrant #{ARGV.join(' ')}"
+      else
+        abort "Installation of one or more plugins has failed. Aborting."
+      end
+    end
+  end
+end
+
+Vagrant.configure("2") do |config|
+  if Vagrant.has_plugin?('vagrant-proxyconf') && ENV['http_proxy']
+    config.proxy.enabled  = { yum: false, apt: false }
+    config.proxy.http     = ENV['http_proxy']
+    config.proxy.https    = ENV['https_proxy']
+    config.proxy.no_proxy = ENV['no_proxy']
+  end
+end

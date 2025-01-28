@@ -1,0 +1,58 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # Force hyperv to use Default Switch.
+  config.vm.provider :hyperv do |h, override|
+    override.vm.network "public_network", bridge: "Default Switch"
+  end
+
+  config.trigger.before :"VagrantPlugins::HyperV::Action::StartInstance", type: :action do |trigger|
+    trigger.ruby do |env, machine|
+      # The password for samba will be stored in plain format,
+      #  in .vagrant\machines\default\hyperv\synced_folders.
+      #  Unless you TRULY need double direction data exchange,
+      #  or care about the performance of data operation, PLZ DONOT use SAMBA!!!
+      if ENV['VAGRANT_SMB_USER']
+        machine.ui.detail "----- Bind shared folder using Samba"
+        machine.config.vm.synced_folder ".", "/vagrant", type: "smb",
+                smb_username: ENV['VAGRANT_SMB_USER'],
+                smb_password: ENV['VAGRANT_SMB_PASSWORD'],
+                mount_options: ["vers=3.0"]
+      else
+        ## This is the one way rsync, from host to VM.
+        #  Use `vagrant rsync` or `vagrant rsync-auto` to update with changes
+        ## If want to work on bi-direction, try with plugin:
+        #  http://github.com/dmatora/vagrant-unison
+        #  or https://github.com/smerrill/vagrant-rsync-back
+        machine.ui.detail "----- Sync dir to remote VM"
+        machine.config.vm.synced_folder ".", "/vagrant", type: "rsync"
+      end
+
+      machine.ui.detail "----- Bind 2nd Network"
+      vm_id       = machine.id
+      current_dir = File.dirname(__FILE__)
+      script_file = File.join(current_dir, "scripts", "hyperv-set_network_adapter.ps1")
+      cmd         = "#{script_file} -vmid #{vm_id}"
+      exec_method = Vagrant::Util::PowerShell.method(:execute_inline)
+
+      begin
+        result = exec_method.call(*cmd, :notify => [:stdout, :stderr]) do |type, data|
+          options = {}
+          case type
+            when :stdout
+              options[:color] = :green
+            when :stderr
+              options[:color] = :red
+          end
+          machine.ui.detail(data, **options)
+        end
+      end
+
+      unless result.exit_code == 0
+        machine.ui.detail "Hyper-v: add network adapter failed..."
+        exit result.exit_code
+      end
+    end
+  end
+end
